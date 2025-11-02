@@ -1,5 +1,6 @@
 module.exports = {
     
-    url:"mongodb://127.0.0.1:27017/GasAgency"
+    url:"mongodb+srv://vikaskoli7400_db_user:wRc738ol2zNQCOBA@gasagencyproject.zbyt9zg.mongodb.net/?appName=GasAgencyProject"
 
 }
+    
