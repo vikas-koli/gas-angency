@@ -1,0 +1,501 @@
+import React, { useCallback, useEffect, useState } from "react";
+import {
+    Box,
+    Button,
+    Modal,
+    TextField,
+    Typography,
+    Grid,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+      TablePagination,
+} from "@mui/material";
+import AdminLayout from "../layout/admin-layout";
+import {
+    deleteApihandler,
+    getApihandler,
+    postApihandler,
+    putApihandler, // 👈 make sure this exists in your api-handler
+} from "../api-handler";
+import Swal from "sweetalert2";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+
+// ---------- Modal styling ----------
+const modalStyle = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 600,
+    bgcolor: "background.paper",
+    borderRadius: 2,
+    boxShadow: 24,
+    p: 4,
+    maxHeight: "90vh",
+    overflowY: "auto",
+};
+
+export default function VendorData() {
+    const [open, setOpen] = useState(false);
+    const [data, setData] = useState([]);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editId, setEditId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+     const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+
+
+    const [formData, setFormData] = useState({
+        party_name: "",
+        no_of_tanki: "",
+        empty_tanki_return: "",
+        total_amount: "",
+        online_payment: "",
+        cash_payment: "",
+        payment_date: "",
+        remarks: "",
+    });
+
+    // Fetch Data
+    const getData = useCallback(async () => {
+        const res = await getApihandler("/getVendorSuppliers");
+        if (res.data) {
+            setData(res.data);
+        }
+    }, []);
+
+    useEffect(() => {
+        getData();
+    }, [getData]);
+
+    const handleSearch = useCallback(
+        async (query) => {
+            if (!query.trim()) {
+                getData(); // if search is cleared, show all
+                return;
+            }
+
+            try {
+                const res = await getApihandler(`/searchGasVendorSuppliers?query=${query}`);
+                if (res.data) {
+                    setData(res.data);
+                }
+            } catch (err) {
+                console.error("Search failed:", err);
+            }
+        },
+        [getData]
+    );
+
+
+    // Input change handler
+    const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  setFormData((prev) => {
+    const updated = { ...prev, [name]: value };
+
+    const total = parseFloat(updated.total_amount) || 0;
+    const cash = parseFloat(updated.cash_payment) || 0;
+    const online = parseFloat(updated.online_payment) || 0;
+
+    // ✅ calculate remaining
+    updated.remaining_payment = total - (cash + online);
+
+    return updated;
+  });
+};
+
+    // ---------- ADD / UPDATE SUBMIT ----------
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        try {
+            let res;
+
+            if (isEditMode) {
+                // ✅ Update existing record
+                res = await putApihandler(`/updateVendorSupplier/${editId}`, formData);
+            } else {
+                // ✅ Add new record
+                res = await postApihandler("/addVendorSupplier", formData);
+
+            }
+
+            if (res.success === true || res.status === 200) {
+                Swal.fire({
+                    title: "Success!",
+                    text: isEditMode
+                        ? "Client data has been updated successfully."
+                        : "Client data has been added successfully.",
+                    icon: "success",
+                    confirmButtonColor: "#3085d6",
+                });
+
+                // Close modal & reset form
+                setOpen(false);
+                setIsEditMode(false);
+                setEditId(null);
+                setFormData({
+                    party_name: "",
+                    no_of_tanki: "",
+                    empty_tanki_return: "",
+                    total_amount: "",
+                    online_payment: "",
+                    cash_payment: "",
+                    payment_date: "",
+                    remarks: "",
+                });
+
+                // ✅ Refresh table instantly (no reload)
+                getData();
+            }
+        } catch (error) {
+            console.error("Error saving client:", error);
+            Swal.fire({
+                title: "Error!",
+                text: "Failed to save client data. Please try again.",
+                icon: "error",
+                confirmButtonColor: "#d33",
+            });
+        }
+    };
+
+    // ---------- DELETE ----------
+    const handleDelete = async (id) => {
+        try {
+            const res = await deleteApihandler(`/deleteVendorSupplier/${id}`);
+            if (res.status === 200) {
+                Swal.fire({
+                    title: "Data deleted successfully!",
+                    icon: "success",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+                getData(); // ✅ Refresh after delete
+            } else {
+                Swal.fire({
+                    title: "Failed to delete data",
+                    icon: "error",
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                title: "Server error",
+                text: err.message || "Something went wrong",
+                icon: "error",
+            });
+        }
+    };
+
+    // ---------- EDIT ----------
+    const handleEdit = (item) => {
+        setFormData({
+            party_name: item.party_name || "",
+            no_of_tanki: item.no_of_tanki || "",
+            empty_tanki_return: item.empty_tanki_return || "",
+            total_amount: item.total_amount || "",
+            online_payment: item.online_payment || "",
+            cash_payment: item.cash_payment || "",
+            payment_date: item.payment_date
+                ? new Date(item.payment_date).toISOString().split("T")[0]
+                : "",
+            remarks: item.remarks || "",
+        });
+        setEditId(item._id);
+        setIsEditMode(true);
+        setOpen(true);
+    };
+
+
+const handleChangePage = (event, newPage) => {
+  setPage(newPage);
+};
+
+const handleChangeRowsPerPage = (event) => {
+  setRowsPerPage(parseInt(event.target.value, 10));
+  setPage(0);
+};
+    return (
+        <AdminLayout>
+            <Box sx={{ p: 3 }}>
+                <Typography variant="h5" gutterBottom>
+                    Vendor Data
+                </Typography>
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 2,
+                    }}
+                >
+                    <TextField
+                        label="Search by Vendor Name"
+                        variant="outlined"
+                        size="small"
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            handleSearch(e.target.value);
+                        }}
+                        sx={{ width: "300px" }}
+                    />
+
+                    <Button
+                        variant="contained"
+                        style={{ background: "#000261" }}
+                        onClick={() => {
+                            setOpen(true);
+                            setIsEditMode(false);
+                            setFormData({
+                                party_name: "",
+                                no_of_tanki: "",
+                                empty_tanki_return: "",
+                                total_amount: "",
+                                online_payment: "",
+                                cash_payment: "",
+                                payment_date: "",
+                                remarks: "",
+                            });
+                        }}
+                    >
+                        Add Vendor Data
+                    </Button>
+                </Box>
+
+
+                {/* ---------- Modal ---------- */}
+                <Modal open={open} onClose={() => setOpen(false)}>
+                    <Box sx={modalStyle} component="form" onSubmit={handleSubmit}>
+                        <Typography variant="h6" mb={2}>
+                            {isEditMode ? "Edit Client Record" : "Add Client Record"}
+                        </Typography>
+
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    label="Party Name"
+                                    name="party_name"
+                                    value={formData.party_name}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    required
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="No. of Tanki"
+                                    name="no_of_tanki"
+                                    type="number"
+                                    value={formData.no_of_tanki}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    required
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Empty Tanki Return"
+                                    name="empty_tanki_return"
+                                    type="number"
+                                    value={formData.empty_tanki_return}
+                                    onChange={handleChange}
+                                    fullWidth
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Total Amount"
+                                    name="total_amount"
+                                    type="number"
+                                    value={formData.total_amount}
+                                    onChange={handleChange}
+                                    fullWidth
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Online Payment"
+                                    name="online_payment"
+                                    type="number"
+                                    value={formData.online_payment}
+                                    onChange={handleChange}
+                                    fullWidth
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Cash Payment"
+                                    name="cash_payment"
+                                    type="number"
+                                    value={formData.cash_payment}
+                                    onChange={handleChange}
+                                    fullWidth
+                                />
+                            </Grid>
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Remaining Amount"
+                                    name="remaining_payment"
+                                    type="number"
+                                    value={formData.remaining_payment}
+                                    InputProps={{ readOnly: true }}
+                                    InputLabelProps={{ shrink: true }} // ✅ this fixes overlapping label
+                                    fullWidth
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Payment Date"
+                                    name="payment_date"
+                                    type="date"
+                                    value={formData.payment_date}
+                                    onChange={handleChange}
+                                    InputLabelProps={{ shrink: true }}
+                                    fullWidth
+                                />
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <TextField
+                                    label="Remarks"
+                                    name="remarks"
+                                    multiline
+                                    rows={4}
+                                    value={formData.remarks}
+                                    onChange={handleChange}
+                                    fullWidth
+                                />
+                            </Grid>
+                        </Grid>
+
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                gap: 2,
+                                mt: 3,
+                            }}
+                        >
+                            <Button
+                                onClick={() => setOpen(false)}
+                                color="secondary"
+                                variant="outlined"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="contained"
+                                style={{ background: "#000261" }}
+                                type="submit"
+                            >
+                                {isEditMode ? "Update" : "Save"}
+                            </Button>
+                        </Box>
+                    </Box>
+                </Modal>
+
+                {/* ---------- Table ---------- */}
+<TableContainer component={Paper} sx={{ mt: 3 }}>
+  <Table sx={{ minWidth: 650 }} aria-label="client table">
+    <TableHead>
+      <TableRow>
+        <TableCell>Name</TableCell>
+        <TableCell>No. of Tanki</TableCell>
+        <TableCell>Empty Tanki Return</TableCell>
+        <TableCell>Total Amount</TableCell>
+        <TableCell>Online Payment</TableCell>
+        <TableCell>Cash Payment</TableCell>
+        <TableCell>Remaining Amount</TableCell>
+        <TableCell>Payment Date</TableCell>
+        <TableCell>Remarks</TableCell>
+        <TableCell>Action</TableCell>
+      </TableRow>
+    </TableHead>
+
+    <TableBody>
+      {data?.length > 0 ? (
+        data
+          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+          .map((item, index) => (
+            <TableRow key={item._id || index}>
+              <TableCell>{item.party_name}</TableCell>
+              <TableCell>{item.no_of_tanki}</TableCell>
+              <TableCell>{item.empty_tanki_return}</TableCell>
+              <TableCell>{item.total_amount}</TableCell>
+              <TableCell>{item.online_payment}</TableCell>
+              <TableCell>{item.cash_payment}</TableCell>
+              <TableCell>{item.remaining_payment}</TableCell>
+              <TableCell>
+                {item.payment_date
+                  ? new Date(item.payment_date).toLocaleDateString()
+                  : ""}
+              </TableCell>
+              <TableCell>{item.remarks}</TableCell>
+              <TableCell>
+                <EditIcon
+                  color="primary"
+                  style={{ cursor: "pointer", marginRight: 10 }}
+                  onClick={() => handleEdit(item)}
+                />
+                <DeleteIcon
+                  color="error"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    Swal.fire({
+                      title: "Are you sure?",
+                      text: "You won’t be able to revert this!",
+                      icon: "warning",
+                      showCancelButton: true,
+                      confirmButtonColor: "#d33",
+                      cancelButtonColor: "#3085d6",
+                      confirmButtonText: "Yes, delete it!",
+                    }).then((result) => {
+                      if (result.isConfirmed) {
+                        handleDelete(item._id);
+                      }
+                    });
+                  }}
+                />
+              </TableCell>
+            </TableRow>
+          ))
+      ) : (
+        <TableRow>
+          <TableCell colSpan={10} align="center">
+            No client data found.
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+
+  {/* ✅ Pagination */}
+  <TablePagination
+    component="div"
+    count={data.length}
+    page={page}
+    onPageChange={handleChangePage}
+    rowsPerPage={rowsPerPage}
+    onRowsPerPageChange={handleChangeRowsPerPage}
+    rowsPerPageOptions={[5, 10, 25, 50]}
+  />
+</TableContainer>
+            </Box>
+        </AdminLayout>
+    );
+}
