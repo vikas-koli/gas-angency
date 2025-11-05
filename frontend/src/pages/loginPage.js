@@ -27,7 +27,7 @@ export default function AdminLogin() {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:80/api/adminLogin", {
+      const res = await fetch("https://gas-angency-bakcend.onrender.com/api/adminLogin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
