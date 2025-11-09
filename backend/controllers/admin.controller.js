@@ -4,7 +4,7 @@ const config = require("../config/auth.config");
 const admin = require("../models/admin.model");
 const GasAgencySupplier = require('../models/addTankidata.model');
 const VendorSupplier = require("../models/vendordata.model");
-
+const Stock = require("../models/stock.model");
 
 // Generate JWT token
 function generateToken(userid) {
@@ -91,6 +91,7 @@ exports.addSupplier = async (req, res) => {
     try {
         const {
             party_name,
+            remaining_tanki,
             no_of_tanki,
             empty_tanki_return,
             total_amount,
@@ -98,6 +99,8 @@ exports.addSupplier = async (req, res) => {
             cash_payment,
             remaining_payment,
             payment_date,
+            cynlder_rate,
+            remaining_cyliender_date,
             remarks
         } = req.body;
 
@@ -111,6 +114,7 @@ exports.addSupplier = async (req, res) => {
 
         const newSupplier = new GasAgencySupplier({
             party_name,
+            remaining_tanki,
             no_of_tanki,
             empty_tanki_return,
             total_amount,
@@ -118,6 +122,8 @@ exports.addSupplier = async (req, res) => {
             cash_payment,
             remaining_payment,
             payment_date,
+            remaining_cyliender_date,
+            cynlder_rate,
             remarks
         });
 
@@ -356,6 +362,7 @@ exports.addVendorSupplier = async (req, res) => {
   try {
     const {
       party_name,
+      remaining_tanki,
       no_of_tanki,
       empty_tanki_return,
       total_amount,
@@ -363,7 +370,9 @@ exports.addVendorSupplier = async (req, res) => {
       cash_payment,
       remaining_payment,
       payment_date,
+      remaining_cyliender_date,
       remarks,
+      cynlder_rate,
     } = req.body;
 
     const vendor = new VendorSupplier({
@@ -375,7 +384,10 @@ exports.addVendorSupplier = async (req, res) => {
       cash_payment,
       remaining_payment,
       payment_date,
+      cynlder_rate,
       remarks,
+      remaining_tanki,
+      remaining_cyliender_date
     });
 
     await vendor.save();
@@ -551,4 +563,192 @@ exports.searchVendorSuppliers = async (req, res) => {
     });
   }
 };
+
+
+// Get all vendor records with stats
+exports.getCountVendors = async (req, res) => {
+  try {
+    const vendors = await VendorSupplier.find().sort({ createdAt: -1 }); // latest first
+
+    // --- Date boundaries ---
+    const today = new Date();
+    const startOfToday = new Date(today.setHours(0, 0, 0, 0));
+    const startOfMonth = new Date();
+    startOfMonth.setMonth(startOfMonth.getMonth() - 1); // last 1 month from now
+
+    // --- Calculate Counts ---
+    const totalCount = vendors.length;
+    const todayCount = vendors.filter(
+      (v) => new Date(v.createdAt) >= startOfToday
+    ).length;
+    const lastMonthCount = vendors.filter(
+      (v) => new Date(v.createdAt) >= startOfMonth
+    ).length;
+
+    // --- Calculate Amounts ---
+    const totalAmount = vendors.reduce(
+      (sum, v) => sum + (Number(v.total_amount) || 0),
+      0
+    );
+    const todayAmount = vendors.reduce((sum, v) => {
+      return new Date(v.createdAt) >= startOfToday
+        ? sum + (Number(v.total_amount) || 0)
+        : sum;
+    }, 0);
+    const lastMonthAmount = vendors.reduce((sum, v) => {
+      return new Date(v.createdAt) >= startOfMonth
+        ? sum + (Number(v.total_amount) || 0)
+        : sum;
+    }, 0);
+
+    // --- Send response ---
+    res.status(200).json({
+      success: true,
+      message: "Vendor list fetched successfully!",
+      stats: {
+        todayCount,
+        lastMonthCount,
+        totalCount,
+        todayAmount,
+        lastMonthAmount,
+        totalAmount,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching vendors:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching vendor list",
+      error: error.message,
+    });
+  }
+};
+
+// Stock data api 
+
+// ✅ Add Stock (only one allowed)
+exports.addStock = async (req, res) => {
+  try {
+    const existing = await Stock.findOne();
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Stock record already exists. Please update instead.",
+      });
+    }
+
+    const { total_stock, selling_stock, pending_stock } = req.body;
+
+    if (!total_stock) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Total stock is required." });
+    }
+
+    const stock = new Stock({
+      total_stock,
+      selling_stock,
+      pending_stock: pending_stock || total_stock - (selling_stock || 0),
+    });
+
+    const saved = await stock.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Stock record added successfully!",
+      data: saved,
+    });
+  } catch (error) {
+    console.error("Error adding stock:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while adding stock",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ Get Stock (only one)
+exports.getStock = async (req, res) => {
+  try {
+    const stock = await Stock.findOne();
+    if (!stock) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No stock record found" });
+    }
+
+    res.status(200).json({ success: true, data: stock });
+  } catch (error) {
+    console.error("Error fetching stock:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching stock",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ Update Stock
+exports.updateStock = async (req, res) => {
+  try {
+    const stock = await Stock.findOne();
+    if (!stock) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Stock record not found" });
+    }
+
+    const { total_stock, selling_stock } = req.body;
+
+    // Update values
+    if (total_stock !== undefined) stock.total_stock = total_stock;
+    if (selling_stock !== undefined) stock.selling_stock = selling_stock;
+
+    // Auto-calculate pending stock
+    stock.pending_stock =
+      stock.total_stock - (stock.selling_stock || 0);
+
+    const updated = await stock.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Stock updated successfully!",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Error updating stock:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating stock",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ Delete Stock (optional)
+exports.deleteStock = async (req, res) => {
+  try {
+    const stock = await Stock.findOne();
+    if (!stock) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No stock record to delete" });
+    }
+
+    await Stock.deleteOne({ _id: stock._id });
+
+    res
+      .status(200)
+      .json({ success: true, message: "Stock record deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting stock:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting stock",
+      error: error.message,
+    });
+  }
+};
+
 

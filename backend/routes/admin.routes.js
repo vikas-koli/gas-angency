@@ -33,4 +33,19 @@ module.exports = (app) => {
     app.put("/api/updateVendorSupplier/:id", admin.updateVendorSupplier);
     app.delete("/api/deleteVendorSupplier/:id", admin.deleteVendorSupplier);
     app.get("/api/searchGasVendorSuppliers", admin.searchVendorSuppliers);
+    app.get("/api/getCountVendors", admin.getCountVendors);
+
+    // -----------------Stock route----------------------------
+
+    // Add one stock record
+app.post("/api/addStock", admin.addStock);
+
+// Get the only stock record
+app.get("/api/getStock", admin.getStock);
+
+// Update the only stock record
+app.put("/api/updateStock", admin.updateStock);
+
+// Delete the only stock record
+app.delete("/api/deleteStock", admin.deleteStock);
 }

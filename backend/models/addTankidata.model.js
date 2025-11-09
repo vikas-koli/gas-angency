@@ -7,15 +7,25 @@ const gasAgencySupplierSchema = new Schema({
         required: [true, "Please enter party name"],
         trim: true
     },
+    cynlder_rate: {
+        type: Number,
+        required: [true, "Please enter rate of Cyliender"],
+        min: [0, "Rate of Cyliender cannot be negative"]
+    },
     no_of_tanki: {
         type: Number,
-        required: [true, "Please enter number of tanki"],
-        min: [0, "Number of tanki cannot be negative"]
+        required: [true, "Please enter number of Cyliender"],
+        min: [0, "Number of Cyliender cannot be negative"]
     },
     empty_tanki_return: {
         type: Number,
         default: 0,
-        min: [0, "Empty tanki return cannot be negative"]
+        min: [0, "Empty Cyliender return cannot be negative"]
+    },
+    remaining_tanki: {
+        type: Number,
+        default: 0,
+        min: [0, "Empty Cyliender return cannot be negative"]
     },
     total_amount: {
         type: Number,
@@ -38,6 +48,10 @@ const gasAgencySupplierSchema = new Schema({
         min: [0, "Remaining payment cannot be negative"]
     },
     payment_date: {
+        type: Date,
+        default: Date.now
+    },
+    remaining_cyliender_date: {
         type: Date,
         default: Date.now
     },
