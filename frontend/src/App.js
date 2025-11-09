@@ -5,6 +5,7 @@ import AdminLogin from './pages/loginPage';
 import Dashboard from './pages/dashboard';
 import ClientData from './pages/client-data';
 import VendorData from './pages/vendor';
+import Stock from './pages/stock';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path='/dashboard' element={<Dashboard/>}  />
         <Route path='/client-list' element={<ClientData/>}  />
         <Route path='/vendor-list' element={<VendorData/>}  />
+        <Route path='/stock' element={<Stock/>}  />
       </Routes>
       </BrowserRouter>
     </div>

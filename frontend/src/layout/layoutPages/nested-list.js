@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import LogoutIcon from '@mui/icons-material/Logout';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 
 export default function NestedList() {
   return (
@@ -50,6 +51,17 @@ export default function NestedList() {
             </IconButton>
           </ListItemIcon>
           <ListItemText primary="Vendor List" sx={{ color: "white" }} />
+        </ListItemButton>
+      </Link>
+
+       <Link to="/stock" style={{ textDecoration: "none" }}>
+        <ListItemButton>
+          <ListItemIcon>
+            <IconButton>
+              <ShowChartIcon sx={{ fill: "white" }} />
+            </IconButton>
+          </ListItemIcon>
+          <ListItemText primary="Stock" sx={{ color: "white" }} />
         </ListItemButton>
       </Link>
 
