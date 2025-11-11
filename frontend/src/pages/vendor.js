@@ -190,7 +190,7 @@ export default function VendorData() {
     const handleDelete = async (id) => {
         try {
             const res = await deleteApihandler(`/deleteVendorSupplier/${id}`);
-            if (res.status === 200) {
+            if (res.success === true) {
                 Swal.fire({
                     title: "Data deleted successfully!",
                     icon: "success",
@@ -546,10 +546,10 @@ export default function VendorData() {
                     <Table sx={{ minWidth: 1200 }} aria-label="client table">
                         <TableHead sx={{ backgroundColor: "#e3f2fd" }}>
                             <TableRow>
-                                <TableCell><strong>Client Name</strong></TableCell>
+                                <TableCell><strong>Vendor Name</strong></TableCell>
                                 <TableCell><strong>Cylinder Rate (₹)</strong></TableCell>
-                                <TableCell><strong>Filled Cylinders</strong></TableCell>
-                                <TableCell><strong>Empty Cylinders</strong></TableCell>
+                                <TableCell><strong>19kg Filled Cylinders</strong></TableCell>
+                                <TableCell><strong>19kg Empty Cylinders</strong></TableCell>
                                 <TableCell><strong>Total Amount (₹)</strong></TableCell>
                                 <TableCell><strong>Online Payment (₹)</strong></TableCell>
                                 <TableCell><strong>Cash Payment (₹)</strong></TableCell>

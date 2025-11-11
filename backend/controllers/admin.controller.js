@@ -86,6 +86,54 @@ exports.adminLogin = async (req, res) => {
     }
 };
 
+// Change Password
+exports.changePassword = async (req, res) => {
+    try {
+        const { admin_Email, oldPassword, newPassword } = req.body;
+
+        // 1️⃣ Check required fields
+        if (!admin_Email || !oldPassword || !newPassword) {
+            return res.status(400).send({
+                message: "Please provide email, old password, and new password.",
+                status: 400
+            });
+        }
+
+        // 2️⃣ Find admin
+        const foundAdmin = await admin.findOne({ admin_Email: admin_Email.toLowerCase(), deleteFlag: false });
+        if (!foundAdmin) {
+            return res.status(404).send({ message: "Admin not found.", status: 404 });
+        }
+
+        // 3️⃣ Verify old password
+        const passwordIsValid = bcrypt.compareSync(oldPassword, foundAdmin.password);
+        if (!passwordIsValid) {
+            return res.status(401).send({ message: "Old password is incorrect.", status: 401 });
+        }
+
+        // 4️⃣ Hash new password
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
+
+        // 5️⃣ Update password in database
+        foundAdmin.password = hashedPassword;
+        await foundAdmin.save();
+
+        // 6️⃣ Success response
+        return res.status(200).send({
+            message: "Password changed successfully.",
+            status: 200
+        });
+
+    } catch (error) {
+        console.error("Change Password Error:", error);
+        return res.status(500).send({
+            message: "Internal server error.",
+            status: 500
+        });
+    }
+};
+
+
 // Add new gas supplier record
 exports.addSupplier = async (req, res) => {
     try {

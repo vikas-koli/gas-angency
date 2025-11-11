@@ -6,6 +6,8 @@ module.exports = (app) => {
 
     // Admin login
     app.post('/api/adminLogin', admin.adminLogin);
+    
+    app.post('/api/adminLoginPasswordChange', admin.changePassword);
 
     // Add new supplier
     app.post('/api/addGasSupplier', admin.addSupplier);
