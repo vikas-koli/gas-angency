@@ -7,9 +7,33 @@ const db = require('./models/db.connection.on');
 
 const app = express();
 
+// ✅ CORS FIX — Add before any route or middleware
+const allowedOrigins = [
+  "http://localhost:3000", // your local React app
+  "https://gas-angency-frontend.onrender.com", // (if you host your frontend)
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin || allowedOrigins.includes(origin) || origin === "*") {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+// ✅ Handle preflight (important for POST/PUT requests)
+app.options("*", cors());
+
 // Middleware
 app.use(express.json());
-app.use(cors({ origin: "*" }));
 
 // Ensure uploads folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -28,7 +52,6 @@ db.mongoose.connect(db.url)
 
 // Routes
 require('./routes/admin.routes')(app);
-// require('./routes/employee.routes')(app);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
