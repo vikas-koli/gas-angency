@@ -214,7 +214,9 @@ export default function ClientData() {
   const handleDelete = async (id) => {
     try {
       const res = await deleteApihandler(`/deleteGasSupplier/${id}`);
-      if (res.status === 200) {
+      console.log("res",res);
+      
+      if (res.success === true) {
         Swal.fire({
           title: "Data deleted successfully!",
           icon: "success",
