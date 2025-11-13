@@ -22,7 +22,7 @@ const vendorSupplierSchema = new Schema({
         default: 0,
         min: [0, "Empty Cyliender return cannot be negative"]
     },
-      remaining_tanki: {
+    remaining_tanki: {
         type: Number,
         default: 0,
         min: [0, "Empty Cyliender return cannot be negative"]
@@ -42,12 +42,11 @@ const vendorSupplierSchema = new Schema({
         default: 0,
         min: [0, "Cash payment cannot be negative"]
     },
+
     remaining_payment: {
         type: Number,
-        default: 0,
-        min: [0, "Remaining payment cannot be negative"]
+        default: 0 // allow both positive & negative values
     },
-    
     payment_date: {
         type: Date,
         default: Date.now

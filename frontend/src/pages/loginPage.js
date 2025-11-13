@@ -34,7 +34,7 @@ export default function AdminLogin() {
 
     setLoading(true);
     try {
-      const res = await fetch("https://gas-angency-bakcend.onrender.com/api/adminLogin", {
+      const res = await fetch("http://localhost:80/api/adminLogin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -70,7 +70,7 @@ export default function AdminLogin() {
 
     setChanging(true);
     try {
-      const res = await fetch("https://gas-angency-bakcend.onrender.com/api/adminLoginPasswordChange", {
+      const res = await fetch("http://localhost:80/api/adminLoginPasswordChange", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

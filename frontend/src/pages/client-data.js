@@ -108,6 +108,9 @@ export default function ClientData() {
     [getData]
   );
 
+
+
+
   useEffect(() => {
     const delay = setTimeout(() => {
       handleSearch(searchQuery);
@@ -118,42 +121,30 @@ export default function ClientData() {
 
   // Input change handler
   const handleChange = (e) => {
-    const { name, value } = e.target;
+  const { name, value } = e.target;
 
-    setFormData((prev) => {
-      const updated = { ...prev, [name]: value };
+  setFormData((prev) => {
+    const updated = { ...prev, [name]: value };
 
-      // 🔹 Calculate Total Amount (Cylinder Rate × No. of Cylinder)
-      const rate = parseFloat(
-        name === "cynlder_rate" ? value : updated.cynlder_rate
-      );
-      const qty = parseFloat(
-        name === "no_of_tanki" ? value : updated.no_of_tanki
-      );
+    // Total Amount
+    const rate = parseFloat(name === "cynlder_rate" ? value : updated.cynlder_rate);
+    const qty = parseFloat(name === "no_of_tanki" ? value : updated.no_of_tanki);
+    if (!isNaN(rate) && !isNaN(qty)) updated.total_amount = rate * qty;
 
-      if (!isNaN(rate) && !isNaN(qty)) {
-        updated.total_amount = rate * qty;
-      }
+    // Remaining Cylinder
+    const empty = parseFloat(name === "empty_tanki_return" ? value : updated.empty_tanki_return);
+    if (!isNaN(qty) && !isNaN(empty)) updated.remaining_tanki = qty - empty;
 
-      // 🔹 Calculate Remaining Cylinder (No. of Cylinder - Empty Cylinder Return)
-      const empty = parseFloat(
-        name === "empty_tanki_return" ? value : updated.empty_tanki_return
-      );
+    // Remaining Payment
+    const total = parseFloat(updated.total_amount) || 0;
+    const cash = parseFloat(updated.cash_payment) || 0;
+    const online = parseFloat(updated.online_payment) || 0;
+    updated.remaining_payment = total - (cash + online);
 
-      if (!isNaN(qty) && !isNaN(empty)) {
-        updated.remaining_tanki = qty - empty;
-      }
+    return updated;
+  });
+};
 
-      // 🔹 Calculate Remaining Payment (Total - Cash - Online)
-      const total = parseFloat(updated.total_amount) || 0;
-      const cash = parseFloat(updated.cash_payment) || 0;
-      const online = parseFloat(updated.online_payment) || 0;
-
-      updated.remaining_payment = total - (cash + online);
-
-      return updated;
-    });
-  };
 
 
   // ---------- ADD / UPDATE SUBMIT ----------
@@ -214,8 +205,8 @@ export default function ClientData() {
   const handleDelete = async (id) => {
     try {
       const res = await deleteApihandler(`/deleteGasSupplier/${id}`);
-      console.log("res",res);
-      
+      console.log("res", res);
+
       if (res.success === true) {
         Swal.fire({
           title: "Data deleted successfully!",
@@ -240,28 +231,35 @@ export default function ClientData() {
   };
 
   // ---------- EDIT ----------
-  const handleEdit = (item) => {
-    setFormData({
-      party_name: item.party_name || "",
-      no_of_tanki: item.no_of_tanki || "",
-      empty_tanki_return: item.empty_tanki_return || "",
-      cynlder_rate: item.cynlder_rate || "",
-      total_amount: item.total_amount || "",
-      online_payment: item.online_payment || "",
-      cash_payment: item.cash_payment || "",
-      remaining_tanki: item.remaining_tanki || "",
-      remaining_cylinder_date: item.remaining_cylinder_date
-        ? new Date(item.remaining_cylinder_date).toISOString().split("T")[0]
-        : "",
-      payment_date: item.payment_date
-        ? new Date(item.payment_date).toISOString().split("T")[0]
-        : "",
-      remarks: item.remarks || "",
-    });
-    setEditId(item._id);
-    setIsEditMode(true);
-    setOpen(true);
-  };
+const handleEdit = (item) => {
+  const totalAmount = parseFloat(item.total_amount) || 0;
+  const onlinePayment = parseFloat(item.online_payment) || 0;
+  const cashPayment = parseFloat(item.cash_payment) || 0;
+
+  setFormData({
+    party_name: item.party_name || "",
+    no_of_tanki: item.no_of_tanki || "",
+    empty_tanki_return: item.empty_tanki_return || "",
+    cynlder_rate: item.cynlder_rate || "",
+    total_amount: totalAmount,
+    online_payment: onlinePayment,
+    cash_payment: cashPayment,
+    remaining_tanki: item.remaining_tanki || 0,
+    remaining_payment: totalAmount - (onlinePayment + cashPayment), // ✅ Fix remaining payment
+    remaining_cylinder_date: item.remaining_cylinder_date
+      ? new Date(item.remaining_cylinder_date).toISOString().split("T")[0]
+      : "",
+    payment_date: item.payment_date
+      ? new Date(item.payment_date).toISOString().split("T")[0]
+      : "",
+    remarks: item.remarks || "",
+  });
+
+  setEditId(item._id);
+  setIsEditMode(true);
+  setOpen(true);
+};
+
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -335,7 +333,10 @@ export default function ClientData() {
   // ✅ Calculate totals
   const totalEmptyTanki = data.reduce((sum, item) => sum + (Number(item.empty_tanki_return) || 0), 0);
   const totalNoOfTanki = data.reduce((sum, item) => sum + (Number(item.no_of_tanki) || 0), 0);
-  const totalRemainingAmount = data.reduce((sum, item) => sum + (Number(item.remaining_payment) || 0), 0);
+  const totalRemainingAmount = data.reduce(
+    (sum, item) => sum + Math.abs(Number(item.remaining_payment) || 0),
+    0
+  );
   const totalAmount = data.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0);
   const totalOnlinePayment = data.reduce((sum, item) => sum + (Number(item.online_payment) || 0), 0);
   const totalCashPayment = data.reduce((sum, item) => sum + (Number(item.cash_payment) || 0), 0);
@@ -619,7 +620,16 @@ export default function ClientData() {
                             ? new Date(item.payment_date).toLocaleDateString()
                             : "--"}
                         </TableCell>
-                        <TableCell>{item.remarks || "—"}</TableCell>
+                        <TableCell style={{ width: '1200px' }}>
+                          <div style={{
+                            maxHeight: '100px',
+                            overflowY: 'auto',
+                            whiteSpace: 'normal',
+                            wordBreak: 'break-word',
+                          }}>
+                            {item.remarks || "—"}
+                          </div>
+                        </TableCell>
 
                         {/* Edit / Delete Buttons */}
                         <TableCell>

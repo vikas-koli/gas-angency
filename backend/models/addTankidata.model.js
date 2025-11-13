@@ -44,9 +44,9 @@ const gasAgencySupplierSchema = new Schema({
     },
     remaining_payment: {
         type: Number,
-        default: 0,
-        min: [0, "Remaining payment cannot be negative"]
+        default: 0 // allow both positive & negative values
     },
+
     payment_date: {
         type: Date,
         default: Date.now

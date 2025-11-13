@@ -143,9 +143,8 @@ exports.addSupplier = async (req, res) => {
             no_of_tanki,
             empty_tanki_return,
             total_amount,
-            online_payment,
-            cash_payment,
-            remaining_payment,
+            online_payment = 0,
+            cash_payment = 0,
             payment_date,
             cynlder_rate,
             remaining_cyliender_date,
@@ -159,6 +158,11 @@ exports.addSupplier = async (req, res) => {
                 message: "party_name, no_of_tanki, and total_amount are required"
             });
         }
+
+        // Calculate remaining payment (can be negative)
+        const totalPaid = Number(online_payment) + Number(cash_payment);
+        const remaining_payment = Number(total_amount) - totalPaid; 
+        // If totalPaid > total_amount => remaining_payment will be negative automatically
 
         const newSupplier = new GasAgencySupplier({
             party_name,
@@ -191,6 +195,7 @@ exports.addSupplier = async (req, res) => {
         });
     }
 };
+
 
 // Get all gas supplier records
 exports.getSuppliers = async (req, res) => {
@@ -227,6 +232,18 @@ exports.updateSupplier = async (req, res) => {
       });
     }
 
+    // Calculate remaining payment if payment fields or total_amount are updated
+    const total_amount = updateData.total_amount ?? supplier.total_amount;
+    const online_payment = updateData.online_payment ?? supplier.online_payment ?? 0;
+    const cash_payment = updateData.cash_payment ?? supplier.cash_payment ?? 0;
+
+    // Calculate new remaining payment (can be negative)
+    const totalPaid = Number(online_payment) + Number(cash_payment);
+    const remaining_payment = Number(total_amount) - totalPaid;
+
+    // Include the calculated remaining_payment in the update data
+    updateData.remaining_payment = remaining_payment;
+
     // Update the supplier
     const updatedSupplier = await GasAgencySupplier.findByIdAndUpdate(
       id,
@@ -248,6 +265,7 @@ exports.updateSupplier = async (req, res) => {
     });
   }
 };
+
 
 // Delete gas supplier record
 exports.deleteSupplier = async (req, res) => {
@@ -406,6 +424,7 @@ exports.getCountSuppliers = async (req, res) => {
 // ==================================
 // ✅ Add Vendor Supplier
 // ==================================
+// Add new vendor supplier record
 exports.addVendorSupplier = async (req, res) => {
   try {
     const {
@@ -414,15 +433,27 @@ exports.addVendorSupplier = async (req, res) => {
       no_of_tanki,
       empty_tanki_return,
       total_amount,
-      online_payment,
-      cash_payment,
-      remaining_payment,
+      online_payment = 0,
+      cash_payment = 0,
       payment_date,
       remaining_cyliender_date,
       remarks,
       cynlder_rate,
     } = req.body;
 
+    // Validation
+    if (!party_name || !no_of_tanki || !total_amount) {
+      return res.status(400).json({
+        success: false,
+        message: "party_name, no_of_tanki, and total_amount are required",
+      });
+    }
+
+    // ✅ Calculate remaining payment (can be negative)
+    const totalPaid = Number(online_payment) + Number(cash_payment);
+    const remaining_payment = Number(total_amount) - totalPaid;
+
+    // Create new vendor record
     const vendor = new VendorSupplier({
       party_name,
       no_of_tanki,
@@ -430,12 +461,12 @@ exports.addVendorSupplier = async (req, res) => {
       total_amount,
       online_payment,
       cash_payment,
-      remaining_payment,
+      remaining_payment, // auto-calculated (may be negative)
       payment_date,
       cynlder_rate,
       remarks,
       remaining_tanki,
-      remaining_cyliender_date
+      remaining_cyliender_date,
     });
 
     await vendor.save();
@@ -454,6 +485,7 @@ exports.addVendorSupplier = async (req, res) => {
     });
   }
 };
+
 
 // ==================================
 // ✅ Get All Vendor Suppliers (excluding deleted)
@@ -485,18 +517,33 @@ exports.getVendorSuppliers = async (req, res) => {
 exports.updateVendorSupplier = async (req, res) => {
   try {
     const { id } = req.params;
+    const updateData = req.body;
 
-    const updatedVendor = await VendorSupplier.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedVendor) {
+    // Find the vendor first
+    const vendor = await VendorSupplier.findById(id);
+    if (!vendor) {
       return res.status(404).json({
         success: false,
         message: "Vendor supplier not found!",
       });
     }
+
+    // Calculate new remaining_payment (can be negative)
+    const total_amount = updateData.total_amount ?? vendor.total_amount;
+    const online_payment = updateData.online_payment ?? vendor.online_payment ?? 0;
+    const cash_payment = updateData.cash_payment ?? vendor.cash_payment ?? 0;
+
+    const totalPaid = Number(online_payment) + Number(cash_payment);
+    const remaining_payment = Number(total_amount) - totalPaid;
+
+    // Set the new calculated value
+    updateData.remaining_payment = remaining_payment;
+
+    // Update the vendor record
+    const updatedVendor = await VendorSupplier.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     res.status(200).json({
       success: true,
@@ -513,18 +560,17 @@ exports.updateVendorSupplier = async (req, res) => {
   }
 };
 
+
 // ==================================
 // ✅ Soft Delete Vendor Supplier
 // ==================================
+// Permanently delete vendor supplier record
 exports.deleteVendorSupplier = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const vendor = await VendorSupplier.findByIdAndUpdate(
-      id,
-      { deleteFlag: true },
-      { new: true }
-    );
+    // Permanently delete the record
+    const vendor = await VendorSupplier.findByIdAndDelete(id);
 
     if (!vendor) {
       return res.status(404).json({
@@ -535,7 +581,7 @@ exports.deleteVendorSupplier = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Vendor supplier deleted successfully!",
+      message: "Vendor supplier deleted permanently!",
     });
   } catch (error) {
     console.error("Error deleting vendor supplier:", error);
@@ -546,6 +592,7 @@ exports.deleteVendorSupplier = async (req, res) => {
     });
   }
 };
+
 
 
 // vendor search api
