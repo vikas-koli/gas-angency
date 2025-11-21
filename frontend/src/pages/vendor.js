@@ -67,6 +67,7 @@ export default function VendorData() {
         payment_date: "",
         remaining_cylinder_date: "",
         remarks: "",
+        previos_payment: ""
     });
 
 
@@ -106,29 +107,29 @@ export default function VendorData() {
 
     // Input change handler
     const handleChange = (e) => {
-  const { name, value } = e.target;
+        const { name, value } = e.target;
 
-  setFormData((prev) => {
-    const updated = { ...prev, [name]: value };
+        setFormData((prev) => {
+            const updated = { ...prev, [name]: value };
 
-    // Total Amount
-    const rate = parseFloat(name === "cynlder_rate" ? value : updated.cynlder_rate);
-    const qty = parseFloat(name === "no_of_tanki" ? value : updated.no_of_tanki);
-    if (!isNaN(rate) && !isNaN(qty)) updated.total_amount = rate * qty;
+            // Total Amount
+            const rate = parseFloat(name === "cynlder_rate" ? value : updated.cynlder_rate);
+            const qty = parseFloat(name === "no_of_tanki" ? value : updated.no_of_tanki);
+            if (!isNaN(rate) && !isNaN(qty)) updated.total_amount = rate * qty;
 
-    // Remaining Cylinder
-    const empty = parseFloat(name === "empty_tanki_return" ? value : updated.empty_tanki_return);
-    if (!isNaN(qty) && !isNaN(empty)) updated.remaining_tanki = qty - empty;
+            // Remaining Cylinder
+            const empty = parseFloat(name === "empty_tanki_return" ? value : updated.empty_tanki_return);
+            if (!isNaN(qty) && !isNaN(empty)) updated.remaining_tanki = qty - empty;
 
-    // Remaining Payment
-    const total = parseFloat(updated.total_amount) || 0;
-    const cash = parseFloat(updated.cash_payment) || 0;
-    const online = parseFloat(updated.online_payment) || 0;
-    updated.remaining_payment = total - (cash + online);
+            // Remaining Payment
+            const total = parseFloat(updated.total_amount) || 0;
+            const cash = parseFloat(updated.cash_payment) || 0;
+            const online = parseFloat(updated.online_payment) || 0;
+            updated.remaining_payment = total - (cash + online);
 
-    return updated;
-  });
-};
+            return updated;
+        });
+    };
 
 
 
@@ -171,6 +172,7 @@ export default function VendorData() {
                     cash_payment: "",
                     payment_date: "",
                     remarks: "",
+                      previos_payment: "",   // <-- ADD THIS
                 });
 
                 // ✅ Refresh table instantly (no reload)
@@ -215,34 +217,35 @@ export default function VendorData() {
     };
 
     // ---------- EDIT ----------
-   const handleEdit = (item) => {
-  const totalAmount = parseFloat(item.total_amount) || 0;
-  const onlinePayment = parseFloat(item.online_payment) || 0;
-  const cashPayment = parseFloat(item.cash_payment) || 0;
+    const handleEdit = (item) => {
+        const totalAmount = parseFloat(item.total_amount) || 0;
+        const onlinePayment = parseFloat(item.online_payment) || 0;
+        const cashPayment = parseFloat(item.cash_payment) || 0;
 
-  setFormData({
-    party_name: item.party_name || "",
-    no_of_tanki: item.no_of_tanki || "",
-    empty_tanki_return: item.empty_tanki_return || "",
-    cynlder_rate: item.cynlder_rate || "",
-    total_amount: totalAmount,
-    online_payment: onlinePayment,
-    cash_payment: cashPayment,
-    remaining_tanki: item.remaining_tanki || 0,
-    remaining_payment: totalAmount - (onlinePayment + cashPayment), // ✅ Fix remaining payment
-    remaining_cylinder_date: item.remaining_cylinder_date
-      ? new Date(item.remaining_cylinder_date).toISOString().split("T")[0]
-      : "",
-    payment_date: item.payment_date
-      ? new Date(item.payment_date).toISOString().split("T")[0]
-      : "",
-    remarks: item.remarks || "",
-  });
+        setFormData({
+            party_name: item.party_name || "",
+            no_of_tanki: item.no_of_tanki || "",
+            empty_tanki_return: item.empty_tanki_return || "",
+            cynlder_rate: item.cynlder_rate || "",
+            total_amount: totalAmount,
+            online_payment: onlinePayment,
+            cash_payment: cashPayment,
+            remaining_tanki: item.remaining_tanki || 0,
+            remaining_payment: totalAmount - (onlinePayment + cashPayment), // ✅ Fix remaining payment
+            remaining_cylinder_date: item.remaining_cylinder_date
+                ? new Date(item.remaining_cylinder_date).toISOString().split("T")[0]
+                : "",
+            payment_date: item.payment_date
+                ? new Date(item.payment_date).toISOString().split("T")[0]
+                : "",
+            remarks: item.remarks || "",
+                previos_payment: item.previos_payment || "",
+        });
 
-  setEditId(item._id);
-  setIsEditMode(true);
-  setOpen(true);
-};
+        setEditId(item._id);
+        setIsEditMode(true);
+        setOpen(true);
+    };
 
 
     // ---------- PDF DOWNLOAD ----------
@@ -264,6 +267,7 @@ export default function VendorData() {
             "Remaining Amount (₹)",
             "Payment Date",
             "Remarks",
+            "Previous Payment (₹)",
         ];
 
         const rows = data.map((item) => [
@@ -283,6 +287,7 @@ export default function VendorData() {
                 ? new Date(item.payment_date).toLocaleDateString()
                 : "--",
             item.remarks || "—",
+               item.previos_payment || "",
         ]);
 
         // ✅ Correct way to call the function
@@ -301,7 +306,6 @@ export default function VendorData() {
         doc.text(`Online Payment: ₹${totalOnlinePayment}`, 14, doc.lastAutoTable.finalY + 42);
         doc.text(`Cash Payment: ₹${totalCashPayment}`, 14, doc.lastAutoTable.finalY + 50);
         doc.text(`Remaining Amount: ₹${totalRemainingAmount}`, 14, doc.lastAutoTable.finalY + 58);
-
         doc.save("ClientDataReport.pdf");
     };
 
@@ -325,7 +329,10 @@ export default function VendorData() {
     const totalAmount = data.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0);
     const totalOnlinePayment = data.reduce((sum, item) => sum + (Number(item.online_payment) || 0), 0);
     const totalCashPayment = data.reduce((sum, item) => sum + (Number(item.cash_payment) || 0), 0);
-
+const totalPreviousPayment = data.reduce(
+  (sum, item) => sum + (Number(item.previos_payment) || 0),
+  0
+);
 
     return (
         <AdminLayout>
@@ -491,6 +498,16 @@ export default function VendorData() {
                                     fullWidth
                                 />
                             </Grid>
+                            <Grid item xs={6}>
+                                <TextField
+                                    label="Previous Payment"
+                                    name="previos_payment"
+                                    type="number"
+                                    value={formData.previos_payment}
+                                    onChange={handleChange}
+                                    fullWidth
+                                />
+                            </Grid>
 
                             <Grid item xs={6}>
                                 <TextField
@@ -570,6 +587,7 @@ export default function VendorData() {
                                 <TableCell><strong>Remaining Cylinders</strong></TableCell>
                                 <TableCell><strong>Remaining Cylinder Date</strong></TableCell>
                                 <TableCell><strong>Remaining Amount (₹)</strong></TableCell>
+                                <TableCell><strong>Previous Payment (₹)</strong></TableCell>
                                 <TableCell><strong>Payment Date</strong></TableCell>
                                 <TableCell><strong>Remarks</strong></TableCell>
                                 <TableCell><strong>Action</strong></TableCell>
@@ -597,6 +615,7 @@ export default function VendorData() {
                                                         : "--"}
                                                 </TableCell>
                                                 <TableCell>{item.remaining_payment}/-</TableCell>
+                                                 <TableCell>{item.previos_payment || 0}/-</TableCell>
                                                 <TableCell>
                                                     {item.payment_date
                                                         ? new Date(item.payment_date).toLocaleDateString()
@@ -656,6 +675,7 @@ export default function VendorData() {
                                         <TableCell><strong>{totalCashPayment}/-</strong></TableCell>
                                         <TableCell colSpan={2}></TableCell>
                                         <TableCell><strong>{totalRemainingAmount}/-</strong></TableCell>
+                                         <TableCell><strong>{totalPreviousPayment}/-</strong></TableCell>
                                         <TableCell colSpan={3}></TableCell>
                                     </TableRow>
                                 </>

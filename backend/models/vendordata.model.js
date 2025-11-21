@@ -47,6 +47,10 @@ const vendorSupplierSchema = new Schema({
         type: Number,
         default: 0 // allow both positive & negative values
     },
+    previos_payment: {
+        type: Number,
+        default: 0 // allow both positive & negative values
+    },
     payment_date: {
         type: Date,
         default: Date.now
