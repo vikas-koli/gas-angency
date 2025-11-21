@@ -54,9 +54,6 @@ export default function ClientData() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-
-
-
   const [formData, setFormData] = useState({
     party_name: "",
     no_of_tanki: "",
@@ -69,8 +66,8 @@ export default function ClientData() {
     remaining_cylinder_date: "",
     payment_date: "",
     remarks: "",
+    previos_payment: "",
   });
-
 
   // Fetch Data
   const getData = useCallback(async () => {
@@ -81,8 +78,6 @@ export default function ClientData() {
       setData(res.data);
     }
   }, []);
-
-
 
   useEffect(() => {
     getData();
@@ -108,16 +103,12 @@ export default function ClientData() {
     [getData]
   );
 
-
-
-
   useEffect(() => {
     const delay = setTimeout(() => {
       handleSearch(searchQuery);
     }, 500); // wait 0.5s before searching
     return () => clearTimeout(delay);
   }, [searchQuery, handleSearch]);
-
 
   // Input change handler
   const handleChange = (e) => {
@@ -143,15 +134,14 @@ export default function ClientData() {
 
     return updated;
   });
-};
-
-
+  };
 
   // ---------- ADD / UPDATE SUBMIT ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    try {
+    console.log("formData",formData);
+        
+    try {  
       let res;
 
       if (isEditMode) {
@@ -185,6 +175,7 @@ export default function ClientData() {
           cash_payment: "",
           payment_date: "",
           remarks: "",
+            previos_payment: "",   // <-- ADD THIS
         });
 
         // ✅ Refresh table instantly (no reload)
@@ -253,6 +244,8 @@ const handleEdit = (item) => {
       ? new Date(item.payment_date).toISOString().split("T")[0]
       : "",
     remarks: item.remarks || "",
+    previos_payment: item.previos_payment || "",
+
   });
 
   setEditId(item._id);
@@ -279,6 +272,8 @@ const handleEdit = (item) => {
       "Remaining Amount (₹)",
       "Payment Date",
       "Remarks",
+      "Previous Payment (₹)",
+
     ];
 
     const rows = data.map((item) => [
@@ -298,6 +293,8 @@ const handleEdit = (item) => {
         ? new Date(item.payment_date).toLocaleDateString()
         : "--",
       item.remarks || "—",
+      item.previos_payment || "",
+
     ]);
 
     // ✅ Correct way to call the function
@@ -340,6 +337,10 @@ const handleEdit = (item) => {
   const totalAmount = data.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0);
   const totalOnlinePayment = data.reduce((sum, item) => sum + (Number(item.online_payment) || 0), 0);
   const totalCashPayment = data.reduce((sum, item) => sum + (Number(item.cash_payment) || 0), 0);
+const totalPreviousPayment = data.reduce(
+  (sum, item) => sum + (Number(item.previos_payment) || 0),
+  0
+);
 
 
   return (
@@ -498,6 +499,17 @@ const handleEdit = (item) => {
                 />
               </Grid>
               <Grid item xs={6}>
+  <TextField
+    label="Previous Payment"
+    name="previos_payment"
+    type="number"
+    value={formData.previos_payment}
+    onChange={handleChange}
+    fullWidth
+  />
+</Grid>
+
+              <Grid item xs={6}>
                 <TextField
                   label="Remaining Amount"
                   name="remaining_payment"
@@ -587,6 +599,7 @@ const handleEdit = (item) => {
                 <TableCell><strong>Remaining Cylinders</strong></TableCell>
                 <TableCell><strong>Remaining Cylinder Date</strong></TableCell>
                 <TableCell><strong>Remaining Amount (₹)</strong></TableCell>
+                <TableCell><strong>Previous Payment (₹)</strong></TableCell>
                 <TableCell><strong>Payment Date</strong></TableCell>
                 <TableCell><strong>Remarks</strong></TableCell>
                 <TableCell><strong>Action</strong></TableCell>
@@ -615,6 +628,8 @@ const handleEdit = (item) => {
                         </TableCell>
 
                         <TableCell>{item.remaining_payment}/-</TableCell>
+                        <TableCell>{item.previos_payment || 0}/-</TableCell>
+
                         <TableCell>
                           {item.payment_date
                             ? new Date(item.payment_date).toLocaleDateString()
@@ -673,6 +688,7 @@ const handleEdit = (item) => {
                     <TableCell><strong>{totalCashPayment}/-</strong></TableCell>
                     <TableCell colSpan={2}></TableCell>
                     <TableCell><strong>{totalRemainingAmount}/-</strong></TableCell>
+                    <TableCell><strong>{totalPreviousPayment}/-</strong></TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                 </>

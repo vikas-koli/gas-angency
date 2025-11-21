@@ -46,6 +46,11 @@ const gasAgencySupplierSchema = new Schema({
         type: Number,
         default: 0 // allow both positive & negative values
     },
+    previos_payment: {
+        type: Number,
+        default: 0 ,
+        min: [0, "Online payment cannot be negative"]
+    },
 
     payment_date: {
         type: Date,
