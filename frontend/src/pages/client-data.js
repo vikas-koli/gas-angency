@@ -111,30 +111,35 @@ export default function ClientData() {
   }, [searchQuery, handleSearch]);
 
   // Input change handler
-  const handleChange = (e) => {
+// Input change handler
+const handleChange = (e) => {
   const { name, value } = e.target;
 
   setFormData((prev) => {
     const updated = { ...prev, [name]: value };
 
-    // Total Amount
-    const rate = parseFloat(name === "cynlder_rate" ? value : updated.cynlder_rate);
-    const qty = parseFloat(name === "no_of_tanki" ? value : updated.no_of_tanki);
-    if (!isNaN(rate) && !isNaN(qty)) updated.total_amount = rate * qty;
-
-    // Remaining Cylinder
-    const empty = parseFloat(name === "empty_tanki_return" ? value : updated.empty_tanki_return);
-    if (!isNaN(qty) && !isNaN(empty)) updated.remaining_tanki = qty - empty;
-
-    // Remaining Payment
-    const total = parseFloat(updated.total_amount) || 0;
+    // Convert all numbers safely
+    const rate = parseFloat(updated.cynlder_rate) || 0;
+    const qty = parseFloat(updated.no_of_tanki) || 0;
+    const empty = parseFloat(updated.empty_tanki_return) || 0;
     const cash = parseFloat(updated.cash_payment) || 0;
     const online = parseFloat(updated.online_payment) || 0;
-    updated.remaining_payment = total - (cash + online);
+    const previous = parseFloat(updated.previos_payment) || 0;
+
+    // Recalculate total amount
+    updated.total_amount = rate * qty;
+
+    // Recalculate remaining cylinders
+    updated.remaining_tanki = qty - empty;
+
+    // Recalculate remaining payment (NOW auto-updates when previous payment changes)
+    updated.remaining_payment =
+      updated.total_amount - (cash + online) + previous;
 
     return updated;
   });
-  };
+};
+
 
   // ---------- ADD / UPDATE SUBMIT ----------
   const handleSubmit = async (e) => {
@@ -222,7 +227,7 @@ export default function ClientData() {
   };
 
   // ---------- EDIT ----------
-const handleEdit = (item) => {
+  const handleEdit = (item) => {
   const totalAmount = parseFloat(item.total_amount) || 0;
   const onlinePayment = parseFloat(item.online_payment) || 0;
   const cashPayment = parseFloat(item.cash_payment) || 0;
@@ -251,7 +256,7 @@ const handleEdit = (item) => {
   setEditId(item._id);
   setIsEditMode(true);
   setOpen(true);
-};
+  };
 
 
   const handleDownloadPDF = () => {
@@ -273,7 +278,6 @@ const handleEdit = (item) => {
       "Payment Date",
       "Remarks",
       "Previous Payment (₹)",
-
     ];
 
     const rows = data.map((item) => [
@@ -294,7 +298,6 @@ const handleEdit = (item) => {
         : "--",
       item.remarks || "—",
       item.previos_payment || "",
-
     ]);
 
     // ✅ Correct way to call the function
@@ -312,7 +315,8 @@ const handleEdit = (item) => {
     doc.text(`Total Amount: ₹${totalAmount}`, 14, doc.lastAutoTable.finalY + 34);
     doc.text(`Online Payment: ₹${totalOnlinePayment}`, 14, doc.lastAutoTable.finalY + 42);
     doc.text(`Cash Payment: ₹${totalCashPayment}`, 14, doc.lastAutoTable.finalY + 50);
-    doc.text(`Remaining Amount: ₹${totalRemainingAmount}`, 14, doc.lastAutoTable.finalY + 58);
+    doc.text(`Previous Payment: ₹${totalPreviousPayment}`, 14, doc.lastAutoTable.finalY + 58);
+    doc.text(`Remaining Amount: ₹${totalRemainingAmount}`, 14, doc.lastAutoTable.finalY + 66);
 
     doc.save("ClientDataReport.pdf");
   };
@@ -598,8 +602,9 @@ const totalPreviousPayment = data.reduce(
                 <TableCell><strong>Cash Payment (₹)</strong></TableCell>
                 <TableCell><strong>Remaining Cylinders</strong></TableCell>
                 <TableCell><strong>Remaining Cylinder Date</strong></TableCell>
-                <TableCell><strong>Remaining Amount (₹)</strong></TableCell>
+               
                 <TableCell><strong>Previous Payment (₹)</strong></TableCell>
+                 <TableCell><strong>Remaining Amount (₹)</strong></TableCell>
                 <TableCell><strong>Payment Date</strong></TableCell>
                 <TableCell><strong>Remarks</strong></TableCell>
                 <TableCell><strong>Action</strong></TableCell>
@@ -626,9 +631,9 @@ const totalPreviousPayment = data.reduce(
                             ? new Date(item.remaining_cyliender_date).toLocaleDateString()
                             : "--"}
                         </TableCell>
+                        <TableCell>{item.previos_payment || 0}/-</TableCell>
 
                         <TableCell>{item.remaining_payment}/-</TableCell>
-                        <TableCell>{item.previos_payment || 0}/-</TableCell>
 
                         <TableCell>
                           {item.payment_date
@@ -687,8 +692,9 @@ const totalPreviousPayment = data.reduce(
                     <TableCell><strong>{totalOnlinePayment}/-</strong></TableCell>
                     <TableCell><strong>{totalCashPayment}/-</strong></TableCell>
                     <TableCell colSpan={2}></TableCell>
-                    <TableCell><strong>{totalRemainingAmount}/-</strong></TableCell>
                     <TableCell><strong>{totalPreviousPayment}/-</strong></TableCell>
+                    <TableCell><strong>{totalRemainingAmount}/-</strong></TableCell>
+
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                 </>
