@@ -122,10 +122,13 @@ export default function VendorData() {
             if (!isNaN(qty) && !isNaN(empty)) updated.remaining_tanki = qty - empty;
 
             // Remaining Payment
-            const total = parseFloat(updated.total_amount) || 0;
+          
             const cash = parseFloat(updated.cash_payment) || 0;
             const online = parseFloat(updated.online_payment) || 0;
-            updated.remaining_payment = total - (cash + online);
+            const previous = parseFloat(updated.previos_payment) || 0;
+
+           updated.remaining_payment =
+      updated.total_amount - (cash + online) + previous;
 
             return updated;
         });
