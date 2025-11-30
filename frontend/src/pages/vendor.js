@@ -305,7 +305,8 @@ export default function VendorData() {
         doc.text(`Total Amount: ₹${totalAmount}`, 14, doc.lastAutoTable.finalY + 34);
         doc.text(`Online Payment: ₹${totalOnlinePayment}`, 14, doc.lastAutoTable.finalY + 42);
         doc.text(`Cash Payment: ₹${totalCashPayment}`, 14, doc.lastAutoTable.finalY + 50);
-        doc.text(`Remaining Amount: ₹${totalRemainingAmount}`, 14, doc.lastAutoTable.finalY + 58);
+    doc.text(`Previous Payment: ₹${totalPreviousPayment}`, 14, doc.lastAutoTable.finalY + 58);
+        doc.text(`Remaining Amount: ₹${totalRemainingAmount}`, 14, doc.lastAutoTable.finalY + 66);
         doc.save("ClientDataReport.pdf");
     };
 
@@ -586,8 +587,8 @@ const totalPreviousPayment = data.reduce(
                                 <TableCell><strong>Cash Payment (₹)</strong></TableCell>
                                 <TableCell><strong>Remaining Cylinders</strong></TableCell>
                                 <TableCell><strong>Remaining Cylinder Date</strong></TableCell>
-                                <TableCell><strong>Remaining Amount (₹)</strong></TableCell>
                                 <TableCell><strong>Previous Payment (₹)</strong></TableCell>
+                                <TableCell><strong>Remaining Amount (₹)</strong></TableCell>
                                 <TableCell><strong>Payment Date</strong></TableCell>
                                 <TableCell><strong>Remarks</strong></TableCell>
                                 <TableCell><strong>Action</strong></TableCell>
@@ -614,8 +615,8 @@ const totalPreviousPayment = data.reduce(
                                                         ? new Date(item.remaining_cyliender_date).toLocaleDateString()
                                                         : "--"}
                                                 </TableCell>
-                                                <TableCell>{item.remaining_payment}/-</TableCell>
                                                  <TableCell>{item.previos_payment || 0}/-</TableCell>
+                                                <TableCell>{item.remaining_payment}/-</TableCell>
                                                 <TableCell>
                                                     {item.payment_date
                                                         ? new Date(item.payment_date).toLocaleDateString()
@@ -674,8 +675,8 @@ const totalPreviousPayment = data.reduce(
                                         <TableCell><strong>{totalOnlinePayment}/-</strong></TableCell>
                                         <TableCell><strong>{totalCashPayment}/-</strong></TableCell>
                                         <TableCell colSpan={2}></TableCell>
-                                        <TableCell><strong>{totalRemainingAmount}/-</strong></TableCell>
                                          <TableCell><strong>{totalPreviousPayment}/-</strong></TableCell>
+                                        <TableCell><strong>{totalRemainingAmount}/-</strong></TableCell>
                                         <TableCell colSpan={3}></TableCell>
                                     </TableRow>
                                 </>

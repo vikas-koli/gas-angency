@@ -162,8 +162,8 @@ exports.addSupplier = async (req, res) => {
     }
 
     // Calculate remaining payment (can be negative)
-    const totalPaid = Number(online_payment) + Number(cash_payment) + Number(previos_payment);
-    const remaining_payment = Number(total_amount) - totalPaid;
+    const totalPaid = Number(online_payment) + Number(cash_payment) ;
+    const remaining_payment = (Number(total_amount) - totalPaid) + Number(previos_payment);
     // If totalPaid > total_amount => remaining_payment will be negative automatically
 
     const newSupplier = new GasAgencySupplier({
