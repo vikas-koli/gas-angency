@@ -1,7 +1,7 @@
 import axios from "axios";
 
-export const serverUrl = "https://gas-angency-bakcend.onrender.com/api";
-// export const serverUrl = "http://localhost:80/api";
+// export const serverUrl = "https://gas-angency-bakcend.onrender.com/api";
+export const serverUrl = "http://localhost:80/api";
 
 export const formatDate = (dateString) => {
   const date = new Date(dateString);

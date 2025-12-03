@@ -456,8 +456,8 @@ exports.addVendorSupplier = async (req, res) => {
     }
 
     // ✅ Calculate remaining payment (can be negative)
-    const totalPaid = Number(online_payment) + Number(cash_payment) + Number(previos_payment);
-    const remaining_payment = Number(total_amount) - totalPaid;
+    const totalPaid = Number(online_payment) + Number(cash_payment);
+    const remaining_payment = (Number(total_amount) - totalPaid) + Number(previos_payment);
 
     // Create new vendor record
     const vendor = new VendorSupplier({
